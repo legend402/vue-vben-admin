@@ -1,15 +1,17 @@
 <script lang="ts" setup>
 import type { VbenFormSchema } from '@vben/common-ui';
-import type { Recordable } from '@vben/types';
 
 import { computed, h, ref } from 'vue';
 
 import { AuthenticationRegister, z } from '@vben/common-ui';
 import { $t } from '@vben/locales';
 
+import { useAuthStore } from '#/store';
+
 defineOptions({ name: 'Register' });
 
 const loading = ref(false);
+const authStore = useAuthStore();
 
 const formSchema = computed((): VbenFormSchema[] => {
   return [
@@ -80,17 +82,12 @@ const formSchema = computed((): VbenFormSchema[] => {
     },
   ];
 });
-
-function handleSubmit(value: Recordable<any>) {
-  // eslint-disable-next-line no-console
-  console.log('register submit:', value);
-}
 </script>
 
 <template>
   <AuthenticationRegister
     :form-schema="formSchema"
     :loading="loading"
-    @submit="handleSubmit"
+    @submit="authStore.register"
   />
 </template>

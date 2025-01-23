@@ -54,15 +54,16 @@ function createRequestClient(baseURL: string) {
   }
 
   function formatToken(token: null | string) {
-    return token ? `Bearer ${token}` : null;
+    return token ? `bearer ${token}` : null;
   }
 
   // 请求头处理
   client.addRequestInterceptor({
     fulfilled: async (config) => {
       const accessStore = useAccessStore();
-
-      config.headers.Authorization = formatToken(accessStore.accessToken);
+      if (accessStore.accessToken) {
+        config.headers.authorization = accessStore.accessToken;
+      }
       config.headers['Accept-Language'] = preferences.app.locale;
       return config;
     },
@@ -72,7 +73,6 @@ function createRequestClient(baseURL: string) {
   client.addResponseInterceptor<HttpResponse>({
     fulfilled: (response) => {
       const { data: responseData, status } = response;
-
       const { code, data } = responseData;
       if (status >= 200 && status < 400 && code === 0) {
         return data;

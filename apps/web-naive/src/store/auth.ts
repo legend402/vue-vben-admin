@@ -8,8 +8,14 @@ import { resetAllStores, useAccessStore, useUserStore } from '@vben/stores';
 
 import { defineStore } from 'pinia';
 
-import { notification } from '#/adapter/naive';
-import { getAccessCodesApi, getUserInfoApi, loginApi, logoutApi } from '#/api';
+import { message, notification } from '#/adapter/naive';
+import {
+  getAccessCodesApi,
+  getUserInfoApi,
+  loginApi,
+  logoutApi,
+  registerApi,
+} from '#/api';
 import { $t } from '#/locales';
 
 export const useAuthStore = defineStore('auth', () => {
@@ -94,6 +100,13 @@ export const useAuthStore = defineStore('auth', () => {
         : {},
     });
   }
+  /**
+   * 用户注册
+   */
+  async function register(params: Recordable<any>) {
+    await registerApi(params);
+    message.success('注册成功');
+  }
 
   async function fetchUserInfo() {
     let userInfo: null | UserInfo = null;
@@ -112,5 +125,6 @@ export const useAuthStore = defineStore('auth', () => {
     fetchUserInfo,
     loginLoading,
     logout,
+    register,
   };
 });
