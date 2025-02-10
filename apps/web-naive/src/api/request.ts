@@ -65,6 +65,9 @@ function createRequestClient(baseURL: string) {
         config.headers.authorization = accessStore.accessToken;
       }
       config.headers['Accept-Language'] = preferences.app.locale;
+      if (config.data) {
+        config.data = filterParams(config.data, ['_X_ROW_KEY'])
+      }
       return config;
     },
   });
@@ -110,3 +113,14 @@ function createRequestClient(baseURL: string) {
 export const requestClient = createRequestClient(apiURL);
 
 export const baseRequestClient = new RequestClient({ baseURL: apiURL });
+
+function filterParams(params: Record<string, any>, keys: string[]) {
+  const new_params: Record<string, any> = {};
+  for (const key in params) {
+    if (keys.includes(key)) {
+      continue;
+    }
+    new_params[key] = params[key];
+  }
+  return new_params;
+}

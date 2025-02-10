@@ -2,26 +2,17 @@
 import type { VbenFormProps } from '#/adapter/form';
 import type { VxeTableGridOptions } from '#/adapter/vxe-table';
 
-import { nextTick } from 'vue';
-
-import { Page, useVbenModal } from '@vben/common-ui';
+import {Page, useVbenDrawer, useVbenModal} from '@vben/common-ui';
 
 import { NButton, NCard, NPopconfirm, useMessage } from 'naive-ui';
 
 import { useVbenForm } from '#/adapter/form';
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
 import { requestClient } from '#/api/request';
+import DictModal from "#/views/base/dict/modules/DictModal.vue";
+import type { DictOption } from "#/views/base/dict/modules/types";
 
 const message = useMessage();
-
-interface RowType {
-  category: string;
-  color: string;
-  id: string;
-  price: string;
-  productName: string;
-  releaseDate: string;
-}
 
 const formOptions: VbenFormProps = {
   // 默认展开
@@ -41,7 +32,7 @@ const formOptions: VbenFormProps = {
   submitOnEnter: false,
 };
 
-const gridOptions: VxeTableGridOptions<RowType> = {
+const gridOptions: VxeTableGridOptions<DictOption> = {
   checkboxConfig: {
     highlight: true,
     labelField: 'name',
@@ -49,8 +40,8 @@ const gridOptions: VxeTableGridOptions<RowType> = {
   rowClassName: 'h-14',
   columns: [
     { title: '序号', type: 'seq', width: 50 },
-    { title: '标题', field: 'title' },
-    { title: '内容', field: 'content' },
+    { title: '字典名称', field: 'dictName' },
+    { title: '字典值', field: 'dictCode' },
     {
       field: 'action',
       fixed: 'right',
@@ -67,7 +58,7 @@ const gridOptions: VxeTableGridOptions<RowType> = {
   proxyConfig: {
     ajax: {
       query: async ({ page }, formValues) => {
-        return await requestClient.get('/article/list', {
+        return await requestClient.get('/dict/list', {
           params: {
             pageNum: page.currentPage,
             pageSize: page.pageSize,
@@ -84,8 +75,8 @@ const [Grid, listApi] = useVbenVxeGrid({
   gridOptions,
 });
 
-function onSubmit(values) {
-  requestClient.post('/article/add', values).then(() => {
+function onSubmit(values: DictOption) {
+  requestClient.post('/dict/add', values).then(() => {
     modalApi.close();
     message.success('添加成功');
     listApi.reload();
@@ -98,21 +89,28 @@ const [Form, formApi] = useVbenForm({
     {
       component: 'Input',
       componentProps: {
-        placeholder: '请输入标题',
+        placeholder: '请输入字典名称',
       },
-      fieldName: 'title',
-      label: '标题',
+      fieldName: 'dictName',
+      label: '字典名称',
       rules: 'required',
     },
     {
       component: 'Input',
       componentProps: {
-        placeholder: '请输入内容',
-        type: 'textarea',
+        placeholder: '请输入字典值',
       },
-      fieldName: 'content',
-      label: '内容',
+      fieldName: 'dictCode',
+      label: '字典值',
       rules: 'required',
+    },
+    {
+      component: 'Input',
+      componentProps: {
+        placeholder: '请输入字典描述',
+      },
+      fieldName: 'dictDesc',
+      label: '字典描述',
     },
   ],
   showDefaultActions: false,
@@ -141,9 +139,9 @@ const [Modal, modalApi] = useVbenModal({
 function handleAdd() {
   modalApi.open();
 }
-function handlePositiveClick({ id }: { id: string }) {
+function handleDelete(id: string) {
   requestClient
-    .delete('/article/delete', {
+    .delete('/dict/delete', {
       params: {
         id,
       },
@@ -153,11 +151,15 @@ function handlePositiveClick({ id }: { id: string }) {
       message.success('删除成功');
     });
 }
-async function handleEdit(row: any) {
-  modalApi.open();
-  await nextTick();
-  formApi.setValues(row);
+async function handleEdit(row: DictOption) {
+  drawApi.setData(row)
+  drawApi.open()
 }
+
+const [DictDrawer, drawApi] = useVbenDrawer({
+  connectedComponent: DictModal,
+})
+
 </script>
 
 <template>
@@ -171,7 +173,7 @@ async function handleEdit(row: any) {
           <NButton type="primary" quaternary @click="handleEdit(row)">
             编辑
           </NButton>
-          <NPopconfirm @positive-click="handlePositiveClick(row)">
+          <NPopconfirm @positive-click="handleDelete(row.id)">
             <template #trigger>
               <NButton type="primary" quaternary>删除</NButton>
             </template>
@@ -183,6 +185,8 @@ async function handleEdit(row: any) {
     <Modal>
       <Form />
     </Modal>
+
+    <DictDrawer />
   </Page>
 </template>
 

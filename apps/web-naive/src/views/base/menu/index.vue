@@ -2,26 +2,16 @@
 import type { VbenFormProps } from '#/adapter/form';
 import type { VxeTableGridOptions } from '#/adapter/vxe-table';
 
-import { nextTick } from 'vue';
-
 import { Page, useVbenModal } from '@vben/common-ui';
 
 import { NButton, NCard, NPopconfirm, useMessage } from 'naive-ui';
 
-import { useVbenForm } from '#/adapter/form';
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
 import { requestClient } from '#/api/request';
+import AddMenuModal from "#/views/base/menu/modules/AddMenuModal.vue";
+import type {MenuItemProps} from "#/views/base/menu/types";
 
 const message = useMessage();
-
-interface RowType {
-  category: string;
-  color: string;
-  id: string;
-  price: string;
-  productName: string;
-  releaseDate: string;
-}
 
 const formOptions: VbenFormProps = {
   // 默认展开
@@ -29,8 +19,8 @@ const formOptions: VbenFormProps = {
   schema: [
     {
       component: 'Input',
-      fieldName: 'title',
-      label: '标题',
+      fieldName: 'name',
+      label: '菜单名称',
     },
   ],
   // 控制表单是否显示折叠按钮
@@ -41,22 +31,23 @@ const formOptions: VbenFormProps = {
   submitOnEnter: false,
 };
 
-const gridOptions: VxeTableGridOptions<RowType> = {
-  checkboxConfig: {
-    highlight: true,
-    labelField: 'name',
+const gridOptions: VxeTableGridOptions<MenuItemProps> = {
+  treeConfig: {
+    parentField: 'parentId',
+    rowField: 'id',
+    childrenField: 'children',
   },
   rowClassName: 'h-14',
   columns: [
-    { title: '序号', type: 'seq', width: 50 },
-    { title: '标题', field: 'title' },
-    { title: '内容', field: 'content' },
+    { title: '序号', type: 'seq', width: 60, treeNode: true  },
+    { title: '菜单名称', field: 'name' },
+    { title: '菜单路径', field: 'path' },
+    { title: '组件路径', field: 'component' },
     {
       field: 'action',
       fixed: 'right',
       slots: { default: 'action' },
       title: '操作',
-      width: 'fit-content',
     },
   ],
   exportConfig: {},
@@ -67,7 +58,7 @@ const gridOptions: VxeTableGridOptions<RowType> = {
   proxyConfig: {
     ajax: {
       query: async ({ page }, formValues) => {
-        return await requestClient.get('/article/list', {
+        return await requestClient.get('/menu/tree', {
           params: {
             pageNum: page.currentPage,
             pageSize: page.pageSize,
@@ -76,6 +67,11 @@ const gridOptions: VxeTableGridOptions<RowType> = {
         });
       },
     },
+    response: {
+      result: params => {
+        return params.data
+      },
+    }
   },
 };
 
@@ -84,66 +80,17 @@ const [Grid, listApi] = useVbenVxeGrid({
   gridOptions,
 });
 
-function onSubmit(values) {
-  requestClient.post('/article/add', values).then(() => {
-    modalApi.close();
-    message.success('添加成功');
-    listApi.reload();
-  });
-}
-
-const [Form, formApi] = useVbenForm({
-  handleSubmit: onSubmit,
-  schema: [
-    {
-      component: 'Input',
-      componentProps: {
-        placeholder: '请输入标题',
-      },
-      fieldName: 'title',
-      label: '标题',
-      rules: 'required',
-    },
-    {
-      component: 'Input',
-      componentProps: {
-        placeholder: '请输入内容',
-        type: 'textarea',
-      },
-      fieldName: 'content',
-      label: '内容',
-      rules: 'required',
-    },
-  ],
-  showDefaultActions: false,
-});
-
 const [Modal, modalApi] = useVbenModal({
-  fullscreenButton: false,
-  onCancel() {
-    modalApi.close();
-  },
-  onConfirm: async () => {
-    await formApi.validateAndSubmitForm();
-    // modalApi.close();
-  },
-  onOpenChange(isOpen: boolean) {
-    if (isOpen) {
-      const { values } = modalApi.getData<Record<string, any>>();
-      if (values) {
-        formApi.setValues(values);
-      }
-    }
-  },
-  title: '添加文章',
+  connectedComponent: AddMenuModal,
 });
 
 function handleAdd() {
+  modalApi.setData(null)
   modalApi.open();
 }
-function handlePositiveClick({ id }: { id: string }) {
+function handleDelete(id: string) {
   requestClient
-    .delete('/article/delete', {
+    .delete('/menu/delete', {
       params: {
         id,
       },
@@ -153,10 +100,13 @@ function handlePositiveClick({ id }: { id: string }) {
       message.success('删除成功');
     });
 }
-async function handleEdit(row: any) {
+function handleEdit(row: MenuItemProps) {
+  modalApi.setData(row)
   modalApi.open();
-  await nextTick();
-  formApi.setValues(row);
+}
+function handleAddChild(row: MenuItemProps) {
+  modalApi.setData({ parentId: row.id })
+  modalApi.open();
 }
 </script>
 
@@ -171,7 +121,10 @@ async function handleEdit(row: any) {
           <NButton type="primary" quaternary @click="handleEdit(row)">
             编辑
           </NButton>
-          <NPopconfirm @positive-click="handlePositiveClick(row)">
+          <NButton type="primary" quaternary @click="handleAddChild(row)">
+            添加下级
+          </NButton>
+          <NPopconfirm @positive-click="handleDelete(row.id)">
             <template #trigger>
               <NButton type="primary" quaternary>删除</NButton>
             </template>
@@ -180,9 +133,8 @@ async function handleEdit(row: any) {
         </template>
       </Grid>
     </NCard>
-    <Modal>
-      <Form />
-    </Modal>
+
+    <Modal @ok="listApi.reload" />
   </Page>
 </template>
 
