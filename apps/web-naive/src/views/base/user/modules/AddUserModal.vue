@@ -1,17 +1,20 @@
 <script setup lang="ts">
+import { ref } from 'vue';
+
 import { useVbenModal } from '@vben/common-ui';
-import {useVbenForm} from "#/adapter/form";
-import useDictOption from "#/hooks/useDictOption";
-import {requestClient} from "#/api/request";
-import {ref} from "vue";
-import {useMessage} from 'naive-ui'
+
+import { useMessage } from 'naive-ui';
+
+import { useVbenForm } from '#/adapter/form';
+import { requestClient } from '#/api/request';
+import useDictOption from '#/hooks/useDictOption';
 
 const emits = defineEmits<{
-  ok: []
-}>()
+  ok: [];
+}>();
 
-const message = useMessage()
-const model = ref({})
+const message = useMessage();
+const model = ref({});
 
 const [Form, formApi] = useVbenForm({
   handleSubmit: onSubmit,
@@ -38,7 +41,7 @@ const [Form, formApi] = useVbenForm({
       component: 'Select',
       componentProps: {
         placeholder: '请选择性别',
-        options: useDictOption('sex')
+        options: useDictOption('sex'),
       },
       fieldName: 'sex',
       label: '性别',
@@ -74,10 +77,10 @@ const [Modal, modalApi] = useVbenModal({
         values.accessCodes = values.accessCodes.split(',');
         formApi.setValues(values);
         model.value = values;
-        modalApi.setState({ title: '编辑用户' })
+        modalApi.setState({ title: '编辑用户' });
       } else {
         model.value = {};
-        modalApi.setState({ title: '添加用户' })
+        modalApi.setState({ title: '添加用户' });
       }
     }
   },
@@ -90,9 +93,9 @@ function onSubmit(values) {
   const method = isEdit ? 'put' : 'post';
   const params = Object.assign({}, model.value, values, {
     accessCodes: values.accessCodes.join(','),
-  })
+  });
   requestClient[method](url, params).then(() => {
-    emits('ok')
+    emits('ok');
     modalApi.close();
     message.success('操作成功');
   });
@@ -105,6 +108,4 @@ function onSubmit(values) {
   </Modal>
 </template>
 
-<style scoped>
-
-</style>
+<style scoped></style>

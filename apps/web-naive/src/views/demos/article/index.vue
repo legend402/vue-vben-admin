@@ -2,15 +2,13 @@
 import type { VbenFormProps } from '#/adapter/form';
 import type { VxeTableGridOptions } from '#/adapter/vxe-table';
 
-import { nextTick } from 'vue';
-
 import { Page, useVbenModal } from '@vben/common-ui';
 
 import { NButton, NCard, NPopconfirm, useMessage } from 'naive-ui';
 
-import { useVbenForm } from '#/adapter/form';
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
 import { requestClient } from '#/api/request';
+import AddArticleModal from "#/views/demos/article/modules/AddArticleModal.vue";
 
 const message = useMessage();
 
@@ -84,61 +82,12 @@ const [Grid, listApi] = useVbenVxeGrid({
   gridOptions,
 });
 
-function onSubmit(values) {
-  requestClient.post('/article/add', values).then(() => {
-    modalApi.close();
-    message.success('添加成功');
-    listApi.reload();
-  });
-}
-
-const [Form, formApi] = useVbenForm({
-  handleSubmit: onSubmit,
-  schema: [
-    {
-      component: 'Input',
-      componentProps: {
-        placeholder: '请输入标题',
-      },
-      fieldName: 'title',
-      label: '标题',
-      rules: 'required',
-    },
-    {
-      component: 'Input',
-      componentProps: {
-        placeholder: '请输入内容',
-        type: 'textarea',
-      },
-      fieldName: 'content',
-      label: '内容',
-      rules: 'required',
-    },
-  ],
-  showDefaultActions: false,
-});
-
 const [Modal, modalApi] = useVbenModal({
-  fullscreenButton: false,
-  onCancel() {
-    modalApi.close();
-  },
-  onConfirm: async () => {
-    await formApi.validateAndSubmitForm();
-    // modalApi.close();
-  },
-  onOpenChange(isOpen: boolean) {
-    if (isOpen) {
-      const { values } = modalApi.getData<Record<string, any>>();
-      if (values) {
-        formApi.setValues(values);
-      }
-    }
-  },
-  title: '添加文章',
+  connectedComponent: AddArticleModal,
 });
 
 function handleAdd() {
+  modalApi.setData(null);
   modalApi.open();
 }
 function handlePositiveClick({ id }: { id: string }) {
@@ -153,10 +102,10 @@ function handlePositiveClick({ id }: { id: string }) {
       message.success('删除成功');
     });
 }
+
 async function handleEdit(row: any) {
+  modalApi.setData(row);
   modalApi.open();
-  await nextTick();
-  formApi.setValues(row);
 }
 </script>
 
@@ -180,9 +129,7 @@ async function handleEdit(row: any) {
         </template>
       </Grid>
     </NCard>
-    <Modal>
-      <Form />
-    </Modal>
+    <Modal @ok="listApi.reload" />
   </Page>
 </template>
 
